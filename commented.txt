@@ -1,0 +1,162 @@
+# @app.route('/waitlist', methods = ['GET'])
+# def get_waitlist():
+#     """
+#         get_waitlist(): This will return all the items in the waitlist
+#     """
+#     try:
+#         documents = [doc.to_dict() for doc in WAITLIST.stream()]
+#         return (jsonify({"Entire Collection": documents}),200)
+#     except Exception as e:
+#         return f"An error Occured: {e}"
+
+
+# @app.route('/scrapped', methods = ['GET'])
+# def get_scrapped():
+#     """
+#         get_scrapped(): This will return all the scrapped amazon link reviews entered into our website.
+#     """
+#     try:
+#         documents = [doc.to_dict() for doc in SCRAPPED.stream()]
+#         return (jsonify({"Entire Collection": documents}),200)
+#     except Exception as e:
+#         return f"An error Occured: {e}"
+
+
+# @app.route('/scrapped/waitlist', methods =['GET'])
+# def get_scrapped_waitlist():
+#     """
+#         get_scrapped_waitlist(): This will return all the scrapped amazon link review items that are yet to be analyzed.
+#     """
+#     try:
+#         query_ref = SCRAPPED.where(u'processed', '==',False)
+#         documents = [doc.to_dict() for doc in query_ref.stream()]
+#         return (jsonify({"Scrapped Links (Not Analyzed)": documents}),200)
+#     except Exception as e:
+#         return f"An error has occured: {e}"
+
+# @app.route('/scrapped/update=<id>', methods = ['POST','PUT'])
+# def update_scrapped_link(id):
+#     """
+#         update_scrapped_link(id): This will go remove scrapped link from the waitlist but it will always be in our system.
+#     """
+#     try:
+#         doc = SCRAPPED.document(id) # doc is DocumentReference
+#         field_updates = {"processed": True}
+#         doc.update(field_updates)
+#         return jsonify({"success": True}), 200
+#     except Exception as e:
+#         return f"An Error Occured: {e}"
+
+# @app.route('/product/entry', methods=['POST'])
+# def create_product():
+#     """
+#         create_product(id): after you analyzed a scrapped product, you need to create a product entry so that product will be in our system.
+#     """
+#     now = datetime.now()
+#     try:
+#         data = request.json['data']
+#         description = data['description']
+#         product_name = data['product_name']
+#         company_id = "PondrAnalytics"
+#         company_name = "Pondr"
+#         category = data['category']
+#         product_image = data['product_image']
+#         attributes = data['attributes']
+#         product_id = category+"-"+ str(datetime.timestamp(now))
+#         doc = PRODUCT.document(product_id)
+#         doc.set({
+#             'product_name': product_name,
+#             'company_id': company_id,
+#             'company_name': company_name,
+#             'description': description,
+#             'category': category,
+#             'product_image': product_image,
+#             'product_id': product_id,
+#             'attributes': attributes
+#         })
+#         return jsonify({"success": True}), 200
+#     except Exception as e:
+#         return f"An Error Occured: {e}"
+
+# @app.route('/wailist/<id>', methods=['GET'])
+# def get_waitlist_by_product(id):
+#     """
+#         get_waitlist_by_product(id): get all the reviews that need to be analyzed by their product id.
+#     """
+#     try:
+#         query_ref = WAITLIST.where(u'Product_id', u'==',id)
+#         documents = [doc.to_dict() for doc in query_ref.stream()]
+#         return (jsonify({str(product_id):documents}),200)
+#     except Exception as e:
+#         return f"An Error Occured: {e}"
+
+# @app.route('/waitlist/delete=<id>', methods=['GET', 'DELETE'])
+# def delete_product_waitlist(id):
+#     """
+#         delete_product_waitlist(id): delete documents in the WAITLIST collection by product_id
+#     """
+#     try:
+#         query_ref = WAITLIST.where(u'Product_id', u'==', id)
+#         documents = [doc.delete() for doc in query_ref.stream()]
+#         return (jsonify({"documents deleted"}),200)
+#     except Exception as e:
+#         return f"An Error Occured: {e}"
+
+
+# @app.route('/review-gurus', methods=['GET'])
+# def get_review_gurus():
+#     """
+#         get_review_gurus(): get all review gurus in our system
+#     """
+#     try:
+#         documents = [doc.to_dict() for doc in REVIEW_GURU.stream()]
+#         return (jsonify({"All Review Gurus": documents}),200)
+#     except Exception as e:
+#         return f"An error Occured: {e}"
+
+# @app.route('/review-gurus/assign', methods=['POST'])
+# def assign_products():
+#     """
+#         assign_products(): assign products to users by passing in their IDs in an array
+#     """
+#     now = datetime.now()
+#     try:
+#         data = request.json['data']
+#         product_id = data['product_id']
+#         product_name = data['product_name']
+#         date = datetime.timestamp(now)
+#         product_category = data['product_category']
+#         review_gurus = data['review_guru_ids']
+#         for i in review_gurus:
+#             products_assigned = REVIEW_GURU.document(i).collection('products_assigned').document(product_id)
+#             products_assigned.set({
+#                 'review_flag': False,
+#                 'product_id': product_id,
+#                 'product_name': product_name,
+#                 'basic_analytics_link': "null",
+#                 'date_assigned': date,
+#                 'date_shipped': "",
+#                 'date_recieved': "",
+#                 'due_date':""
+#             })
+#             print("Review Guru assigned = ", i)
+#         doc = PRODUCT.document(product_id) # doc is DocumentReference
+#         field_updates = {"assigned": True}
+#         doc.update(field_updates)
+#         return  jsonify({"success": True}), 200
+#     except Exception as e:
+#         return f"An error Occured: {e}"
+
+# @app.route('/product/assign', methods=['GET'])
+# def get_products_to_be_assgined():
+#     """
+#         get_products_to_be_assgined(): Get all products that are yet to be assigned
+#     """
+#     try:
+#         # This Query is checking if a product has not be assigned and the company wants review gurus as well.
+#         # The reason for 2 flags is that, you don't want automatically assume companies always want review gurus.
+#         query_ref = PRODUCT.where(u'assigned', '==',False).where(u'review_guru_analytics', '==', True)
+#         documents = [doc.to_dict() for doc in query_ref.stream()]
+#         return (jsonify({"Products to be assigned": documents}),200)
+#     except Exception as e:
+#         return f"An error has Occured: {e}"
